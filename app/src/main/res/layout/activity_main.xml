@@ -33,6 +33,18 @@
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
             android:textColor="@color/grey_40" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:gravity="center_vertical"
+            android:text="Call logs"
+            android:layout_marginTop="@dimen/spacing_middle"
+            android:drawableLeft="@drawable/ic_logs"
+            android:background="@android:drawable/edit_text"
+            android:drawableStart="@drawable/ic_logs"
+            android:onClick="pickPhone"/>
+
     </LinearLayout>
 
 
@@ -42,6 +54,7 @@
         android:layout_marginLeft="@dimen/spacing_large"
         android:layout_marginRight="@dimen/spacing_large"
         android:background="@color/grey_40" />
+
 
     <LinearLayout
         android:layout_width="match_parent"
