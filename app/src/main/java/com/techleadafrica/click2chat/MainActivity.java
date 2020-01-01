@@ -8,6 +8,8 @@ import androidx.appcompat.widget.Toolbar;
 
 import android.app.Dialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -83,6 +85,8 @@ public class MainActivity extends AppCompatActivity {
                 else {
                     String phone = country_code+phone_field.getText().toString();
                     String encoded_message = "";
+
+                    //Encoding message that can be transferred in the url
                     try {
                         encoded_message = URLEncoder.encode(message,"UTF-8");
                     } catch (UnsupportedEncodingException e) {
@@ -90,10 +94,19 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                     String url = BASE_URL+phone+"/?text="+encoded_message;
-                    Intent i = new Intent(Intent.ACTION_VIEW);
-                    i.setData(Uri.parse(url));
-                    startActivity(i);
-                    finish();
+                    Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    //i.setData(Uri.parse(url));
+                    PackageManager packageManager = getPackageManager();
+                    List<ResolveInfo> activities = packageManager.queryIntentActivities(i, PackageManager.MATCH_DEFAULT_ONLY);
+
+                    //check if WhatsApp is installed
+                    if(activities.size()>0){
+                        startActivity(i);
+                        finish();
+                    }
+                    else {
+                        Toast.makeText(MainActivity.this, "WhatsApp not installed", Toast.LENGTH_SHORT).show();
+                    }
                 }
 
             }
