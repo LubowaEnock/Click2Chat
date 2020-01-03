@@ -2,12 +2,15 @@ package com.techleadafrica.click2chat;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.appcompat.widget.AppCompatRatingBar;
 import androidx.appcompat.widget.Toolbar;
 
+import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -15,8 +18,10 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.text.InputType;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,6 +31,7 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,8 +42,13 @@ import com.hbb20.CountryCodePicker;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     private static final String BASE_URL = "https://wa.me/";
@@ -116,12 +127,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void pickPhone(View v){
-        Intent intent = new Intent(Intent.ACTION_PICK);
-        intent.setDataAndType(Uri.parse("content://call_log/calls"), ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
-        startActivityForResult(intent,1);
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -146,5 +151,59 @@ public class MainActivity extends AppCompatActivity {
                 phone_field.setText(number);
             }
         }
+    }
+
+    public void pickPhone(View v) {
+
+        String[] callLogFields = { CallLog.Calls._ID,
+                CallLog.Calls.NUMBER,
+                CallLog.Calls.CACHED_NAME,
+                CallLog.Calls.DATE};
+        String ORDER = CallLog.Calls.DATE + " DESC";
+        String WHERE = CallLog.Calls._ID + " IN (SELECT " + CallLog.Calls._ID + " FROM calls GROUP BY " + CallLog.Calls.NUMBER + ")";
+
+
+        @SuppressLint("MissingPermission") Cursor cursor = getContentResolver().query(CallLog.Calls.CONTENT_URI, callLogFields, WHERE, null, ORDER);
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+
+
+
+        if(cursor == null || !cursor.moveToFirst()) return;
+        final List<Map<String, String>> data = new ArrayList<>();
+        do
+        {
+            long time = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
+
+            SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault());
+            Date resultdate = new Date(time);
+            String date = sdf.format(resultdate);
+            String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
+            String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
+
+            Map<String, String> map = new HashMap<>(4);
+            map.put("number", number);
+            map.put("name", name);
+            map.put("visible_name", name == null ? number : name);
+            map.put("date", date);
+            data.add(map);
+        } while (cursor.moveToNext());
+        if(!cursor.isClosed()) cursor.close();
+
+        DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialogInterface, int item) {
+                String number = data.get(item).get("number");
+                phone_field.setText(number);
+            }
+        };
+
+        SimpleAdapter adapter = new SimpleAdapter(this, data,
+                android.R.layout.simple_list_item_2,
+                new String[] {"visible_name", "date"},
+                new int[] {android.R.id.text1,
+                        android.R.id.text2,
+                });
+        dialogBuilder.setAdapter(adapter, listener);
+        dialogBuilder.setTitle("Choose from Call Log");
+        dialogBuilder.create().show();
     }
 }
