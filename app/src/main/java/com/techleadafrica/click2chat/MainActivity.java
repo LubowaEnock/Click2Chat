@@ -1,5 +1,6 @@
 package com.techleadafrica.click2chat;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
@@ -7,7 +8,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.appcompat.widget.AppCompatRatingBar;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.DialogInterface;
@@ -55,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private TextInputEditText message_field, phone_field;
     private CountryCodePicker cpp;
     private String country_code;
+    private static final int CALL_LOG_PERMISSIONS = 101;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +70,8 @@ public class MainActivity extends AppCompatActivity {
         sendMessage();
     }
 
-    private void initComponent(){
+
+    private void initComponent() {
         phone_field = findViewById(R.id.phone_number);
         message_field = findViewById(R.id.message);
         cpp = findViewById(R.id.ccp);
@@ -81,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
         //message_field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
     }
 
-    private void sendMessage(){
+    private void sendMessage() {
         ((AppCompatButton) findViewById(R.id.bt_cancel)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -93,32 +99,30 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String message = message_field.getText().toString();
-                if(phone_field.getText().toString().equals("")){
+                if (phone_field.getText().toString().equals("")) {
                     Toast.makeText(MainActivity.this, "Phone field can not be empty", Toast.LENGTH_SHORT).show();
-                }
-                else {
-                    String phone = country_code+phone_field.getText().toString();
+                } else {
+                    String phone = country_code + phone_field.getText().toString();
                     String encoded_message = "";
 
                     //Encoding message that can be transferred in the url
                     try {
-                        encoded_message = URLEncoder.encode(message,"UTF-8");
+                        encoded_message = URLEncoder.encode(message, "UTF-8");
                     } catch (UnsupportedEncodingException e) {
                         Toast.makeText(MainActivity.this, "We're sorry\nMessage format can't be sent", Toast.LENGTH_SHORT).show();
                         e.printStackTrace();
                     }
-                    String url = BASE_URL+phone+"/?text="+encoded_message;
+                    String url = BASE_URL + phone + "/?text=" + encoded_message;
                     Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                     //i.setData(Uri.parse(url));
                     PackageManager packageManager = getPackageManager();
                     List<ResolveInfo> activities = packageManager.queryIntentActivities(i, PackageManager.MATCH_DEFAULT_ONLY);
 
                     //check if WhatsApp is installed
-                    if(activities.size()>0){
+                    if (activities.size() > 0) {
                         startActivity(i);
                         finish();
-                    }
-                    else {
+                    } else {
                         Toast.makeText(MainActivity.this, "WhatsApp not installed", Toast.LENGTH_SHORT).show();
                     }
                 }
@@ -130,8 +134,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == 1){
-            if(resultCode == RESULT_OK){
+        if (requestCode == 1) {
+            if (resultCode == RESULT_OK) {
                 Uri contactUri = data.getData();
                 // We only need the NUMBER column, because there will be only one row in the result
                 String[] projection = {ContactsContract.CommonDataKinds.Phone.NUMBER};
@@ -154,13 +158,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void pickPhone(View v) {
-
-        String[] callLogFields = { CallLog.Calls._ID,
+        if(!checkForPermissions()){
+            return;
+        }
+        String[] callLogFields = {CallLog.Calls._ID,
                 CallLog.Calls.NUMBER,
                 CallLog.Calls.CACHED_NAME,
                 CallLog.Calls.DATE};
         String ORDER = CallLog.Calls.DATE + " DESC";
         String WHERE = CallLog.Calls._ID + " IN (SELECT " + CallLog.Calls._ID + " FROM calls GROUP BY " + CallLog.Calls.NUMBER + ")";
+
 
 
         @SuppressLint("MissingPermission") Cursor cursor = getContentResolver().query(CallLog.Calls.CONTENT_URI, callLogFields, WHERE, null, ORDER);
@@ -206,4 +213,45 @@ public class MainActivity extends AppCompatActivity {
         dialogBuilder.setTitle("Choose from Call Log");
         dialogBuilder.create().show();
     }
+
+    private boolean checkForPermissions(){
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALL_LOG ) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CALL_LOG}, CALL_LOG_PERMISSIONS);
+        }
+        else {
+            return true;
+        }
+        return false;
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(requestCode == CALL_LOG_PERMISSIONS){
+            if(grantResults.length>0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                return;
+            }
+            else {
+                new AlertDialog.Builder(this)
+                        .setTitle("Call log permissions denied")
+                        .setMessage("You will only be able to access call logs after granting permissions")
+                        .setPositiveButton("Continue", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                checkForPermissions();
+                            }
+                        })
+                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        })
+                        .create()
+                        .show();
+            }
+        }
+    }
+
+
 }
