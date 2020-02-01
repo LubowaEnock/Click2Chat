@@ -29,11 +29,11 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/spacing_small"
             android:gravity="center_horizontal"
-            android:text="Send WhatsApp messages to unsaved numbers"
+            android:text="Send WhatsApp messages to unsaved numbers\n\nNote: Please make sure you select the right country"
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
             android:textColor="@color/grey_40" />
 
-        <TextView
+        <!--TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
@@ -43,7 +43,7 @@
             android:drawableLeft="@drawable/ic_logs"
             android:background="@android:drawable/edit_text"
             android:drawableStart="@drawable/ic_logs"
-            android:onClick="pickPhone"/>
+            android:onClick="pickPhone"/-->
 
     </LinearLayout>
 

@@ -131,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /*
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -156,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
 
     public void pickPhone(View v) {
         if(!checkForPermissions()){
@@ -252,6 +254,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+    */
 
 
 }
